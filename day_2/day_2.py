@@ -1,9 +1,11 @@
 import itertools
 from common.file_solver import FileSolver
-from common.parsing_helpers import load_numeric_grid
+from common.line_solver import LineSolver, SummingLineByLineSolution
+from common.parsing_helpers import load_numeric_grid, split_nums
 from itertools import pairwise
 
-LoadedDataType = list[list[int]]
+
+LineDataType = list[int]
 
 
 def is_basic_seq_safe(seq: list[int]) -> bool:
@@ -72,20 +74,6 @@ def is_dampened_seq_safe(seq: list[int]) -> bool:
     return True
 
 
-def solve_pt1(data: LoadedDataType) -> int:
-    return sum(
-        is_basic_seq_safe(seq)
-        for seq in data
-    )
-
-
-def solve_pt2(data: LoadedDataType) -> int:
-    return sum(
-        is_dampened_seq_safe(seq)
-        for seq in data
-    )
-
-
 def is_dumb_dampened_seq_safe(seq: list[int]) -> bool:
     return is_basic_seq_safe(seq) or any(
         is_basic_seq_safe(sub_seq)
@@ -93,19 +81,14 @@ def is_dumb_dampened_seq_safe(seq: list[int]) -> bool:
     )
 
 
-def solve_pt3(data: LoadedDataType) -> int:
-    return sum(
-        is_dumb_dampened_seq_safe(seq)
-        for seq in data
-    )
-
-
 if __name__ == "__main__":
-
-    FileSolver[LoadedDataType].construct_for_day(
+    LineSolver[LineDataType].construct_for_day(
         day_number=2,
-        loader=load_numeric_grid,
-        solutions=[solve_pt1, solve_pt2, solve_pt3]
+        line_parser=split_nums,
+        solutions=[
+            SummingLineByLineSolution[LineDataType](is_basic_seq_safe),
+            SummingLineByLineSolution[LineDataType](is_dumb_dampened_seq_safe),
+            SummingLineByLineSolution[LineDataType](is_dampened_seq_safe),
+        ]
     ).solve_all()
-
 

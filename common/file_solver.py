@@ -18,7 +18,7 @@ class FileSolver(Generic[T]):
     def construct_for_day(
         cls,
         day_number: int,
-        loader: Callable[[str], T],
+        loader: Callable[[TextIO], T],
         solutions: list[Callable[[T], str | int]],
     ) -> 'FileSolver[T]':
         return cls(

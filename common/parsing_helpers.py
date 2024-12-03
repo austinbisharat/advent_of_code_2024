@@ -9,6 +9,10 @@ def load_lines(file: TextIO) -> Iterable[str]:
 
 def load_numeric_grid(file: TextIO) -> list[list[int]]:
     return [
-        [int(value) for value in re.split(r'\s+', line)]
+        split_nums(line)
         for line in load_lines(file)
     ]
+
+
+def split_nums(line: str) -> list[int]:
+    return [int(value) for value in re.split(r'\s+', line.strip())]
