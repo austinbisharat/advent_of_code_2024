@@ -1,7 +1,6 @@
 import itertools
-from common.file_solver import FileSolver
-from common.line_solver import LineSolver, SummingLineByLineSolution
-from common.parsing_helpers import load_numeric_grid, split_nums
+from common.line_solver import LineSolver, create_summing_solution
+from common.parsing_helpers import split_nums
 from itertools import pairwise
 
 
@@ -86,9 +85,9 @@ if __name__ == "__main__":
         day_number=2,
         line_parser=split_nums,
         solutions=[
-            SummingLineByLineSolution[LineDataType](is_basic_seq_safe),
-            SummingLineByLineSolution[LineDataType](is_dumb_dampened_seq_safe),
-            SummingLineByLineSolution[LineDataType](is_dampened_seq_safe),
+            create_summing_solution(is_basic_seq_safe),
+            create_summing_solution(is_dumb_dampened_seq_safe),
+            create_summing_solution(is_dampened_seq_safe),
         ]
     ).solve_all()
 

@@ -1,5 +1,4 @@
 from typing import *
-import re
 from collections import Counter
 
 from common.parsing_helpers import load_numeric_grid
