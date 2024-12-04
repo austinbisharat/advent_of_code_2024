@@ -1,4 +1,4 @@
-from typing import Generic, TypeVar, Callable, TextIO
+from typing import Generic, TypeVar, Callable, TextIO, Any
 
 T = TypeVar('T')
 
@@ -9,22 +9,26 @@ class FileSolver(Generic[T]):
             file_names: list[str],
             loader: Callable[[TextIO], T],
             solutions: list[Callable[[T], str | int]],
+            log_func: Callable[[Any], None] = print
     ) -> None:
         self._file_names = file_names
         self._loader = loader
         self._solutions = solutions
+        self._log_func = log_func
 
     @classmethod
     def construct_for_day(
-        cls,
-        day_number: int,
-        loader: Callable[[TextIO], T],
-        solutions: list[Callable[[T], str | int]],
+            cls,
+            day_number: int,
+            loader: Callable[[TextIO], T],
+            solutions: list[Callable[[T], str | int]],
+            log_func: Callable[[Any], None] = print
     ) -> 'FileSolver[T]':
         return cls(
             file_names=[f'sample_{day_number}.txt', f'input_{day_number}.txt'],
             loader=loader,
             solutions=solutions,
+            log_func=log_func
         )
 
     def solve_all(self) -> None:
@@ -32,18 +36,18 @@ class FileSolver(Generic[T]):
             self.solve_file(file_name)
 
     def solve_file(self, file_name: str) -> None:
-        print(f'Solving {file_name}:')
+        self._log_func(f'Solving {file_name}:')
         try:
             with open(file_name, 'r') as f:
                 data = self._loader(f)
         except Exception as e:
-            print(f'Failed to load {file_name}:  {e}')
+            self._log_func(f'Failed to load {file_name}:  {e}')
             raise
 
         for i, solution in enumerate(self._solutions):
             try:
                 result = solution(data)
-                print(f'\tSolution for part {i+1}: {result}')
+                self._log_func(f'\tSolution for part {i + 1}: {result}')
             except Exception as e:
-                print(f'\tSolution for part {i+1} failed:  {e}')
-        print(f'Done.\n')
+                self._log_func(f'\tSolution for part {i + 1} failed:  {e}')
+        self._log_func(f'Done.\n')

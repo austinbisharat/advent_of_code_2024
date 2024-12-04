@@ -1,6 +1,6 @@
 import abc
 from numbers import Number
-from typing import Generic, TypeVar, Callable, Type
+from typing import Generic, TypeVar, Callable, Type, Any
 
 LineDataType = TypeVar('LineDataType')
 LineOutputType = TypeVar('LineOutputType')
@@ -22,7 +22,7 @@ class AbstractLineByLineSolution(abc.ABC, Generic[LineDataType]):
 
 
 def create_summing_solution(
-    line_processor: Callable[[LineDataType], Number]
+        line_processor: Callable[[LineDataType], Number]
 ) -> Type[AbstractLineByLineSolution[LineDataType]]:
     return create_line_by_line_aggregating_solution(
         line_processor=line_processor,
@@ -42,11 +42,10 @@ def create_product_solution(
 
 
 def create_line_by_line_aggregating_solution(
-    line_processor: Callable[[LineDataType], LineOutputType],
-    reducer_func: Callable[[ResultType, LineOutputType], ResultType],
-    initial_result: ResultType,
+        line_processor: Callable[[LineDataType], LineOutputType],
+        reducer_func: Callable[[ResultType, LineOutputType], ResultType],
+        initial_result: ResultType,
 ) -> Type[AbstractLineByLineSolution[LineDataType]]:
-
     class LineByLineSolution(AbstractLineByLineSolution[LineDataType]):
         def __init__(self) -> None:
             self._result = initial_result
@@ -62,26 +61,30 @@ def create_line_by_line_aggregating_solution(
 
 class LineSolver(Generic[LineDataType]):
     def __init__(
-        self,
-        file_names: list[str],
-        line_parser: Callable[[str], LineDataType],
-        solutions: list[Type[AbstractLineByLineSolution[LineDataType]]],
+            self,
+            file_names: list[str],
+            line_parser: Callable[[str], LineDataType],
+            solutions: list[Type[AbstractLineByLineSolution[LineDataType]]],
+            log_func: Callable[[Any], None] = print
     ) -> None:
         self._file_names = file_names
         self._line_parser = line_parser
         self.solution_classes = solutions
+        self._log_func = log_func
 
     @classmethod
     def construct_for_day(
-        cls,
-        day_number: int,
-        line_parser: Callable[[str], LineDataType],
-        solutions: list[Type[AbstractLineByLineSolution[LineDataType]]],
+            cls,
+            day_number: int,
+            line_parser: Callable[[str], LineDataType],
+            solutions: list[Type[AbstractLineByLineSolution[LineDataType]]],
+            log_func: Callable[[Any], None] = print
     ) -> 'LineSolver[LineDataType]':
         return cls(
             file_names=[f'sample_{day_number}.txt', f'input_{day_number}.txt'],
             line_parser=line_parser,
             solutions=solutions,
+            log_func=log_func,
         )
 
     def solve_all(self) -> None:
@@ -89,7 +92,7 @@ class LineSolver(Generic[LineDataType]):
             self.solve_file(file_name)
 
     def solve_file(self, file_name: str) -> None:
-        print(f'Solving {file_name}:')
+        self._log_func(f'Solving {file_name}:')
         solutions = [s() for s in self.solution_classes]
 
         try:
@@ -97,26 +100,26 @@ class LineSolver(Generic[LineDataType]):
                 for line in f:
                     self._process_line(line, solutions)
         except Exception as e:
-            print(f'Failed to load or process {file_name}:  {e}')
+            self._log_func(f'Failed to load or process {file_name}:  {e}')
             raise
 
         for i, solution in enumerate(solutions):
             try:
                 result = solution.result()
-                print(f'\tSolution for part {i+1}: {result}')
+                self._log_func(f'\tSolution for part {i + 1}: {result}')
             except Exception as e:
-                print(f'\tSolution for part {i+1} failed:  {e}')
-        print(f'Done.\n')
+                self._log_func(f'\tSolution for part {i + 1} failed:  {e}')
+        self._log_func(f'Done.\n')
 
     def _process_line(self, line: str, solutions: list[AbstractLineByLineSolution[LineDataType]]) -> None:
         try:
             line_data = self._line_parser(line)
         except Exception as e:
-            print(f'Failed to parse line {line}: {e}')
+            self._log_func(f'Failed to parse line {line}: {e}')
             raise e
 
         for i, solution in enumerate(solutions):
             try:
                 solution.process_line(line_data)
             except Exception as e:
-                print(f'Solution {i+1} failed to process line {line}:  {e}')
+                self._log_func(f'Solution {i + 1} failed to process line {line}:  {e}')
