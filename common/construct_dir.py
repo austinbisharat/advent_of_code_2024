@@ -101,9 +101,9 @@ if __name__ == "__main__":
 
 
 def construct_dir(
-    day_number: int,
-    template: str,
-    option: str = 'x'
+        day_number: int,
+        template: str,
+        option: str = 'x'
 ) -> None:
     directory = BASE_DIR / f"day_{day_number}"
     directory.mkdir(exist_ok=True)
@@ -115,6 +115,6 @@ def construct_dir(
 
 if __name__ == '__main__':
     construct_dir(
-        day_number=4,
+        day_number=5,
         template=FULL_FILE_SOLVER_TEMPLATE,
     )
