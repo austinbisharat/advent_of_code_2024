@@ -115,6 +115,6 @@ def construct_dir(
 
 if __name__ == '__main__':
     construct_dir(
-        day_number=7,
-        template=LINE_SOLVER_TEMPLATE,
+        day_number=8,
+        template=FULL_FILE_SOLVER_TEMPLATE,
     )
