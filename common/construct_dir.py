@@ -99,6 +99,12 @@ if __name__ == "__main__":
     ).solve_all()
 """
 
+TEMPLATES = {
+    'FILE': FULL_FILE_SOLVER_TEMPLATE,
+    'LINE': LINE_SOLVER_TEMPLATE,
+    'SUMMING': SUMMING_TEMPLATE,
+}
+
 
 def construct_dir(
         day_number: int,
@@ -114,7 +120,12 @@ def construct_dir(
 
 
 if __name__ == '__main__':
+    day_number = input("Enter day number: ")
+    templates = '\n\t'.join(TEMPLATES.keys())
+    template_name = input(f"Template Options:\n\t{templates}\nEnter template name: ")
+    flag = input('Enter template flag (w=overwrite, x=create_or_err): ')
     construct_dir(
-        day_number=9,
-        template=FULL_FILE_SOLVER_TEMPLATE,
+        day_number=int(day_number),
+        template=TEMPLATES[template_name.strip().upper()],
+        option=flag or 'x',
     )
