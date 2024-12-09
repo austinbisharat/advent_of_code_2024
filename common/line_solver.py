@@ -95,31 +95,17 @@ class LineSolver(Generic[LineDataType]):
         self._log_func(f'Solving {file_name}:')
         solutions = [s() for s in self.solution_classes]
 
-        try:
-            with open(file_name, 'r') as f:
-                for line in f:
-                    self._process_line(line, solutions)
-        except Exception as e:
-            self._log_func(f'Failed to load or process {file_name}:  {e}')
-            raise
+        with open(file_name, 'r') as f:
+            for line in f:
+                self._process_line(line, solutions)
 
         for i, solution in enumerate(solutions):
-            try:
-                result = solution.result()
-                self._log_func(f'\tSolution for part {i + 1}: {result}')
-            except Exception as e:
-                self._log_func(f'\tSolution for part {i + 1} failed:  {e}')
+            result = solution.result()
+            self._log_func(f'\tSolution for part {i + 1}: {result}')
         self._log_func(f'Done.\n')
 
     def _process_line(self, line: str, solutions: list[AbstractLineByLineSolution[LineDataType]]) -> None:
-        try:
-            line_data = self._line_parser(line)
-        except Exception as e:
-            self._log_func(f'Failed to parse line {line}: {e}')
-            raise e
+        line_data = self._line_parser(line)
 
         for i, solution in enumerate(solutions):
-            try:
-                solution.process_line(line_data)
-            except Exception as e:
-                self._log_func(f'Solution {i + 1} failed to process line {line}:  {e}')
+            solution.process_line(line_data)

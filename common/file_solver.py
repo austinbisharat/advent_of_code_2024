@@ -37,17 +37,10 @@ class FileSolver(Generic[T]):
 
     def solve_file(self, file_name: str) -> None:
         self._log_func(f'Solving {file_name}:')
-        try:
-            with open(file_name, 'r') as f:
-                data = self._loader(f)
-        except Exception as e:
-            self._log_func(f'Failed to load {file_name}:  {e}')
-            raise
+        with open(file_name, 'r') as f:
+            data = self._loader(f)
 
         for i, solution in enumerate(self._solutions):
-            try:
-                result = solution(data)
-                self._log_func(f'\tSolution for part {i + 1}: {result}')
-            except Exception as e:
-                self._log_func(f'\tSolution for part {i + 1} failed:  {e}')
+            result = solution(data)
+            self._log_func(f'\tSolution for part {i + 1}: {result}')
         self._log_func(f'Done.\n')
