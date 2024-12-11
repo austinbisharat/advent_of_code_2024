@@ -1,5 +1,5 @@
 import enum
-from typing import Generic, TypeVar, Sequence, TextIO, cast
+from typing import Generic, TypeVar, Sequence, TextIO, cast, Optional
 
 T = TypeVar('T')
 
@@ -28,6 +28,10 @@ class Grid(Generic[T]):
                 assert len(row) == len(self._grid[0])
             self.width = len(grid[0])
 
+    @classmethod
+    def create_empty_grid(cls, height: int, width: int) -> 'Grid[Optional[T]]':
+        return Grid([[None for _ in range(width)] for _ in range(height)])
+
     def is_valid_point(self, point: PositionType) -> bool:
         row, col = point
         return 0 <= row < self.height and 0 <= col < self.width
@@ -48,6 +52,14 @@ class Grid(Generic[T]):
 
 def load_char_grid(file: TextIO) -> Grid[str]:
     return Grid([l.strip() for l in file.readlines() if l])
+
+
+def load_digit_grid(file: TextIO) -> Grid[int]:
+    return Grid([
+        list(map(int, line.strip()))
+        for line in file.readlines()
+        if line.strip()
+    ])
 
 
 def scale_relative_point(point: (int, int), scale: int) -> (int, int):
