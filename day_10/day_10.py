@@ -24,15 +24,10 @@ def _score_terrain(
             memo[point] = get_terminal_value(point)
             return memo[point]
 
-        all_neighbors = (
-            add_relative_point(point, direction.value)
-            for direction in CARDINAL_DIRS
-        )
-
         terminals = reducer(
-            get_scorable_value_for_point(neighbor)
-            for neighbor in all_neighbors
-            if terrain.is_valid_point(neighbor) and terrain[neighbor] == terrain[point] + 1
+            get_scorable_value_for_point(neighbor_point)
+            for neighbor_point, neighbor_value in terrain.iter_neighboring_points_and_values(point)
+            if terrain.is_valid_point(neighbor_point) and neighbor_value == terrain[point] + 1
         )
 
         memo[point] = terminals

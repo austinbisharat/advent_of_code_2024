@@ -91,10 +91,14 @@ class Grid(Generic[T]):
         point: PositionType,
         directions: Sequence['Direction'] = tuple(CARDINAL_DIRS),
     ) -> Iterable[PositionType]:
-        return (
+        all_neighbors = (
             add_relative_point(point, direction.value)
             for direction in directions
-            if self.is_valid_point(point)
+        )
+        return (
+            neighbor
+            for neighbor in all_neighbors
+            if self.is_valid_point(neighbor)
         )
 
     def iter_neighboring_points_and_values(
