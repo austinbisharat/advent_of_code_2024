@@ -12,6 +12,22 @@ class InvalidPoint(Exception):
 PositionType = tuple[int, int]
 
 
+class Direction(enum.Enum):
+    # Sensitive to order -- must
+    NORTH = (-1, 0)
+    NORTH_EAST = (-1, 1)
+    EAST = (0, 1)
+    SOUTH_EAST = (1, 1)
+    SOUTH = (1, 0)
+    SOUTH_WEST = (1, -1)
+    WEST = (0, -1)
+    NORTH_WEST = (-1, -1)
+
+
+CARDINAL_DIRS = [d for d in Direction if sum(map(abs, d.value)) == 1]
+POSITIVE_DIRS = [d for d in Direction if all(val >= 0 for val in d.value)]
+
+
 def add_point(left: PositionType, right: PositionType) -> PositionType:
     return cast(PositionType, tuple(l + r for l, r in zip(left, right)))
 
@@ -51,9 +67,9 @@ class Grid(Generic[T]):
         self._grid[row][col] = value
 
     def iter_points(
-            self,
-            row_order_asc: bool = True,
-            col_order_asc: bool = True,
+        self,
+        row_order_asc: bool = True,
+        col_order_asc: bool = True,
     ) -> Iterable[PositionType]:
         return itertools.product(
             range(self.height) if row_order_asc else reversed(range(self.height)),
@@ -61,14 +77,35 @@ class Grid(Generic[T]):
         )
 
     def iter_points_and_values(
-            self,
-            row_order_asc: bool = True,
-            col_order_asc: bool = True,
+        self,
+        row_order_asc: bool = True,
+        col_order_asc: bool = True,
     ) -> Iterable[tuple[PositionType, T]]:
         return ((p, self[p]) for p in self.iter_points(row_order_asc, col_order_asc))
 
     def __iter__(self) -> Iterable[tuple[PositionType, T]]:
         return self.iter_points_and_values()
+
+    def iter_neighboring_points(
+        self,
+        point: PositionType,
+        directions: Sequence['Direction'] = tuple(CARDINAL_DIRS),
+    ) -> Iterable[PositionType]:
+        return (
+            add_relative_point(point, direction.value)
+            for direction in directions
+            if self.is_valid_point(point)
+        )
+
+    def iter_neighboring_points_and_values(
+        self,
+        point: PositionType,
+        directions: Sequence['Direction'] = tuple(CARDINAL_DIRS),
+    ) -> Iterable[tuple[PositionType, T]]:
+        return (
+            (neighbor_point, self[neighbor_point])
+            for neighbor_point in self.iter_neighboring_points(point, directions)
+        )
 
 
 def load_char_grid(file: TextIO) -> Grid[str]:
@@ -89,22 +126,6 @@ def scale_relative_point(point: (int, int), scale: int) -> (int, int):
 
 def add_relative_point(point: tuple[int, int], other_point: tuple[int, int]) -> tuple[int, int]:
     return cast(tuple[int, int], tuple(x + y for x, y in zip(point, other_point)))
-
-
-class Direction(enum.Enum):
-    # Sensitive to order -- must
-    NORTH = (-1, 0)
-    NORTH_EAST = (-1, 1)
-    EAST = (0, 1)
-    SOUTH_EAST = (1, 1)
-    SOUTH = (1, 0)
-    SOUTH_WEST = (1, -1)
-    WEST = (0, -1)
-    NORTH_WEST = (-1, -1)
-
-
-CARDINAL_DIRS = [d for d in Direction if sum(map(abs, d.value)) == 1]
-POSITIVE_DIRS = [d for d in Direction if all(val >= 0 for val in d.value)]
 
 
 def rotate_90(d: Direction, turns: int = 1) -> 'Direction':

@@ -9,10 +9,10 @@ T = TypeVar('T')
 
 
 def _score_terrain(
-        terrain: Grid[int],
-        get_terminal_value: Callable[[PositionType], T],
-        reducer: Callable[[Iterable[T]], T],
-        score_function: Callable[[T], int],
+    terrain: Grid[int],
+    get_terminal_value: Callable[[PositionType], T],
+    reducer: Callable[[Iterable[T]], T],
+    score_function: Callable[[T], int],
 ) -> int:
     memo = Grid[Optional[T]].create_empty_grid(terrain.height, terrain.width)
 

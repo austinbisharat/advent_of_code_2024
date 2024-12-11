@@ -107,9 +107,9 @@ TEMPLATES = {
 
 
 def construct_dir(
-        day_number: int,
-        template: str,
-        option: str = 'x'
+    day_number: int,
+    template: str,
+    option: str = 'x'
 ) -> None:
     directory = BASE_DIR / f"day_{day_number}"
     directory.mkdir(exist_ok=True)

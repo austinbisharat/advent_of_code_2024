@@ -32,10 +32,10 @@ def score_line(line: LineDataType, operators: list[Callable[[int, int], int]]) -
 
 
 def _can_score_target(
-        target: int,
-        cur_val: int,
-        remaining: Sequence[int],
-        operators: list[Callable[[int, int], int]],
+    target: int,
+    cur_val: int,
+    remaining: Sequence[int],
+    operators: list[Callable[[int, int], int]],
 ) -> bool:
     if len(remaining) == 0:
         return cur_val == target

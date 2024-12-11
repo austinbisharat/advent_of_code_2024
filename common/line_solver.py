@@ -22,7 +22,7 @@ class AbstractLineByLineSolution(abc.ABC, Generic[LineDataType]):
 
 
 def create_summing_solution(
-        line_processor: Callable[[LineDataType], Number]
+    line_processor: Callable[[LineDataType], Number]
 ) -> Type[AbstractLineByLineSolution[LineDataType]]:
     return create_line_by_line_aggregating_solution(
         line_processor=line_processor,
@@ -32,7 +32,7 @@ def create_summing_solution(
 
 
 def create_product_solution(
-        line_processor: Callable[[LineDataType], Number]
+    line_processor: Callable[[LineDataType], Number]
 ) -> Type[AbstractLineByLineSolution[LineDataType]]:
     return create_line_by_line_aggregating_solution(
         line_processor=line_processor,
@@ -42,9 +42,9 @@ def create_product_solution(
 
 
 def create_line_by_line_aggregating_solution(
-        line_processor: Callable[[LineDataType], LineOutputType],
-        reducer_func: Callable[[ResultType, LineOutputType], ResultType],
-        initial_result: ResultType,
+    line_processor: Callable[[LineDataType], LineOutputType],
+    reducer_func: Callable[[ResultType, LineOutputType], ResultType],
+    initial_result: ResultType,
 ) -> Type[AbstractLineByLineSolution[LineDataType]]:
     class LineByLineSolution(AbstractLineByLineSolution[LineDataType]):
         def __init__(self) -> None:
@@ -61,11 +61,11 @@ def create_line_by_line_aggregating_solution(
 
 class LineSolver(Generic[LineDataType]):
     def __init__(
-            self,
-            file_names: list[str],
-            line_parser: Callable[[str], LineDataType],
-            solutions: list[Type[AbstractLineByLineSolution[LineDataType]]],
-            log_func: Callable[[Any], None] = print
+        self,
+        file_names: list[str],
+        line_parser: Callable[[str], LineDataType],
+        solutions: list[Type[AbstractLineByLineSolution[LineDataType]]],
+        log_func: Callable[[Any], None] = print
     ) -> None:
         self._file_names = file_names
         self._line_parser = line_parser
@@ -74,11 +74,11 @@ class LineSolver(Generic[LineDataType]):
 
     @classmethod
     def construct_for_day(
-            cls,
-            day_number: int,
-            line_parser: Callable[[str], LineDataType],
-            solutions: list[Type[AbstractLineByLineSolution[LineDataType]]],
-            log_func: Callable[[Any], None] = print
+        cls,
+        day_number: int,
+        line_parser: Callable[[str], LineDataType],
+        solutions: list[Type[AbstractLineByLineSolution[LineDataType]]],
+        log_func: Callable[[Any], None] = print
     ) -> 'LineSolver[LineDataType]':
         return cls(
             file_names=[f'sample_{day_number}.txt', f'input_{day_number}.txt'],

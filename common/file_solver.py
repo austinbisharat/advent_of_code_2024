@@ -5,11 +5,11 @@ T = TypeVar('T')
 
 class FileSolver(Generic[T]):
     def __init__(
-            self,
-            file_names: list[str],
-            loader: Callable[[TextIO], T],
-            solutions: list[Callable[[T], str | int]],
-            log_func: Callable[[Any], None] = print
+        self,
+        file_names: list[str],
+        loader: Callable[[TextIO], T],
+        solutions: list[Callable[[T], str | int]],
+        log_func: Callable[[Any], None] = print
     ) -> None:
         self._file_names = file_names
         self._loader = loader
@@ -18,11 +18,11 @@ class FileSolver(Generic[T]):
 
     @classmethod
     def construct_for_day(
-            cls,
-            day_number: int,
-            loader: Callable[[TextIO], T],
-            solutions: list[Callable[[T], str | int]],
-            log_func: Callable[[Any], None] = print
+        cls,
+        day_number: int,
+        loader: Callable[[TextIO], T],
+        solutions: list[Callable[[T], str | int]],
+        log_func: Callable[[Any], None] = print
     ) -> 'FileSolver[T]':
         return cls(
             file_names=[f'sample_{day_number}.txt', f'input_{day_number}.txt'],
