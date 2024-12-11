@@ -1,5 +1,6 @@
 import enum
-from typing import Generic, TypeVar, Sequence, TextIO, cast, Optional
+import itertools
+from typing import Generic, TypeVar, Sequence, TextIO, cast, Optional, Iterable
 
 T = TypeVar('T')
 
@@ -48,6 +49,26 @@ class Grid(Generic[T]):
 
         row, col = point
         self._grid[row][col] = value
+
+    def iter_points(
+            self,
+            row_order_asc: bool = True,
+            col_order_asc: bool = True,
+    ) -> Iterable[PositionType]:
+        return itertools.product(
+            range(self.height) if row_order_asc else reversed(range(self.height)),
+            range(self.width) if col_order_asc else reversed(range(self.width)),
+        )
+
+    def iter_points_and_values(
+            self,
+            row_order_asc: bool = True,
+            col_order_asc: bool = True,
+    ) -> Iterable[tuple[PositionType, T]]:
+        return ((p, self[p]) for p in self.iter_points(row_order_asc, col_order_asc))
+
+    def __iter__(self) -> Iterable[tuple[PositionType, T]]:
+        return self.iter_points_and_values()
 
 
 def load_char_grid(file: TextIO) -> Grid[str]:
