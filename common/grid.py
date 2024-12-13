@@ -132,6 +132,10 @@ def add_relative_point(point: tuple[int, int], other_point: tuple[int, int]) -> 
     return cast(tuple[int, int], tuple(x + y for x, y in zip(point, other_point)))
 
 
+def subtract_relative_point(point: tuple[int, int], other_point: tuple[int, int]):
+    return cast(tuple[int, int], tuple(x - y for x, y in zip(point, other_point)))
+
+
 def rotate_90(d: Direction, turns: int = 1) -> 'Direction':
     idx = CARDINAL_DIRS.index(d)
     if idx == -1:
