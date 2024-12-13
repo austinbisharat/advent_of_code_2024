@@ -1,16 +1,19 @@
 import dataclasses
-import math
 import re
 from collections import deque
-from typing import TextIO, Sequence
+from typing import TextIO, Sequence, Iterable, cast
 
 from common.file_solver import FileSolver
-from common.grid import subtract_relative_point
 
 _CLAW_MACHINE_INFO_MATCHER = re.compile(
     r"^[\w\s]*: X\+(\d+), Y\+(\d+)\n[\w\s]*: X\+(\d+), Y\+(\d+)\n^[\w\s]*: X=(\d+), Y=(\d+)",
     flags=re.MULTILINE,
 )
+
+
+def _determinant(left: tuple[int, int], right: tuple[int, int]) -> int:
+    l, r = (a * b for a, b in zip(left, reversed(right)))
+    return l - r
 
 
 @dataclasses.dataclass(frozen=True, eq=True)
@@ -19,31 +22,16 @@ class ClawMachineInfo:
     button_b: tuple[int, int]
     prize_location: tuple[int, int]
 
-    def min_tokens_to_score(self) -> float:
-        memo: dict[tuple[int, int], float] = {}
+    def min_tokens_to_score(self) -> int:
+        denominator = _determinant(self.button_a, self.button_b)
+        if denominator == 0:
+            raise NotImplementedError('Need to handle colinear/zeros cases')
 
-        def _score(prize_location: tuple[int, int]) -> float:
-            if prize_location == (0, 0):
-                return 0.0
-
-            if min(prize_location) < 0:
-                return float("inf")
-
-            if prize_location in memo:
-                return memo[prize_location]
-
-            gcd = math.gcd(prize_location[0], prize_location[1])
-            if gcd > 1:
-                return gcd * _score(tuple(dim // gcd for dim in prize_location))
-
-            result = min((
-                _score(subtract_relative_point(prize_location, self.button_a)) + 3.0,
-                _score(subtract_relative_point(prize_location, self.button_b)) + 1.0
-            ))
-            return memo.setdefault(prize_location, result)
-
-        score = _score(self.prize_location)
-        return score
+        unscaled_a_count = (self.prize_location[0] * self.button_b[1] - self.prize_location[1] * self.button_b[0])
+        unscaled_b_count = (self.button_a[0] * self.prize_location[1] - self.button_a[1] * self.prize_location[0])
+        if unscaled_a_count % denominator != 0 or unscaled_b_count % denominator != 0:
+            return 0
+        return 3 * unscaled_a_count // denominator + 1 * unscaled_b_count // denominator
 
 
 def load(file: TextIO) -> Sequence[ClawMachineInfo]:
@@ -62,28 +50,27 @@ def load(file: TextIO) -> Sequence[ClawMachineInfo]:
     return results
 
 
-def min_score_all_prizes(data: Sequence[ClawMachineInfo]) -> int:
+def min_score_all_prizes(data: Iterable[ClawMachineInfo]) -> int:
     results = (
         claw.min_tokens_to_score()
         for claw in data
     )
-    return sum(int(r) for r in results if not math.isinf(r))
+    return sum(int(r) for r in results)
 
 
-def solve_pt2(data: Sequence[ClawMachineInfo]) -> int:
-    results = (
+def min_score_scaled_prizes(data: Iterable[ClawMachineInfo]) -> int:
+    return min_score_all_prizes(
         dataclasses.replace(
             claw,
-            prize_location=(claw.prize_location[0] + 10000000000000, claw.prize_location[1] + 10000000000000),
-        ).min_tokens_to_score()
+            prize_location=cast(tuple[int, int], tuple(dim + 10_000_000_000_000 for dim in claw.prize_location)),
+        )
         for claw in data
     )
-    return sum(int(r) for r in results if not math.isinf(r))
 
 
 if __name__ == "__main__":
     FileSolver[Sequence[ClawMachineInfo]].construct_for_day(
         day_number=13,
         loader=load,
-        solutions=[min_score_all_prizes, solve_pt2]
+        solutions=[min_score_all_prizes, min_score_scaled_prizes]
     ).solve_all()
