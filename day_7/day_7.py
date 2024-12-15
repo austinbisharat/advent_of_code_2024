@@ -63,7 +63,7 @@ def concat_ints(a: int, b: int) -> int:
 
 if __name__ == "__main__":
     print(concat_ints(23, 100))
-    LineSolver[LineDataType].construct_for_day(
+    LineSolver[LineDataType, None].construct_for_day(
         day_number=7,
         line_parser=parse_line,
         solutions=[

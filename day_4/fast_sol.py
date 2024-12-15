@@ -8,7 +8,7 @@ LineDataType = Sequence[str]
 DirType = tuple[int, int]
 
 
-class FastXMASWordSolver(AbstractLineByLineSolution[LineDataType]):
+class FastXMASWordSolver(AbstractLineByLineSolution[LineDataType, None]):
     _WORD = 'XMAS'
     _DIRS: Sequence[DirType] = ((1, 0), (1, 1), (0, 1), (1, -1))
 
@@ -57,7 +57,7 @@ class FastXMASWordSolver(AbstractLineByLineSolution[LineDataType]):
         return self._result
 
 
-class FastCrossMasWordSolver(AbstractLineByLineSolution[LineDataType]):
+class FastCrossMasWordSolver(AbstractLineByLineSolution[LineDataType, None]):
     class CrossConfig(int):
         _CHARS = 'MS'
 
@@ -85,7 +85,7 @@ class FastCrossMasWordSolver(AbstractLineByLineSolution[LineDataType]):
 
 
 if __name__ == '__main__':
-    solver = LineSolver[LineDataType].construct_for_day(
+    solver = LineSolver[LineDataType, None].construct_for_day(
         day_number=4,
         line_parser=lambda x: x.strip(),
         solutions=[FastXMASWordSolver],
