@@ -3,6 +3,7 @@ from typing import Generic, TypeVar, Callable, TextIO, Any
 T = TypeVar('T')
 
 
+# TODO: might be nice to support different loaders for different days
 class FileSolver(Generic[T]):
     def __init__(
         self,
