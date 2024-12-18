@@ -1,11 +1,8 @@
 import itertools
-from collections import deque
-from typing import TextIO, Sequence, cast, Callable
+from typing import TextIO, cast, Sequence
 
+from chronospatial_computer import RegisterStateDataType, ProgramDataType, ChronospatialComputer
 from common.file_solver import FileSolver
-
-RegisterStateDataType = tuple[int, int, int]
-ProgramDataType = Sequence[int]
 
 LoadedDataType = tuple[RegisterStateDataType, ProgramDataType]
 
@@ -25,103 +22,92 @@ def load(file: TextIO) -> LoadedDataType:
     return register_data, program_data
 
 
-class InvalidProgramStateException(Exception):
-    pass
-
-
-class ChronoSpatialComputer:
-    def __init__(self, register_state: RegisterStateDataType) -> None:
-        self._registers = list(register_state)
-        self._operations: Sequence[Callable[[int], None]] = [
-            self._adv,
-            self._bxl,
-            self._bst,
-            self._jnz,
-            self._bxc,
-            self._out,
-            self._bdv,
-            self._cdv,
-        ]
-        self._results = deque()
-        self._instruction_pointer = 0
-
-    def set_register_state(self, register_state: RegisterStateDataType) -> None:
-        self._registers = list(register_state)
-
-    def run_program(self, program: ProgramDataType) -> Sequence[int]:
-        self._results = deque()
-        self._instruction_pointer = 0
-        while self._instruction_pointer < len(program):
-            op_code, operand = program[self._instruction_pointer], program[self._instruction_pointer + 1]
-            self._operations[op_code](operand)
-
-        return self._results
-
-    def _get_combo_value(self, operand: int) -> int:
-        if operand <= 3:
-            return operand
-        elif operand <= 6:
-            return self._registers[operand - 4]
-        else:
-            raise InvalidProgramStateException('Should never happen')
-
-    def _dv(self, operand: int, register: int) -> None:
-        combo_value = self._get_combo_value(operand)
-        self._registers[register] = self._registers[0] // (1 << combo_value)
-        self._instruction_pointer += 2
-
-    def _adv(self, operand: int) -> None:
-        self._dv(operand, 0)
-
-    def _bdv(self, operand: int) -> None:
-        self._dv(operand, 1)
-
-    def _cdv(self, operand: int) -> None:
-        self._dv(operand, 2)
-
-    def _bxl(self, operand: int) -> None:
-        self._registers[1] ^= operand
-        self._instruction_pointer += 2
-
-    def _bst(self, operand: int) -> None:
-        self._registers[1] = self._get_combo_value(operand) % 8
-        self._instruction_pointer += 2
-
-    def _jnz(self, operand: int) -> None:
-        if self._registers[0] == 0:
-            self._instruction_pointer += 2
-        else:
-            self._instruction_pointer = operand
-
-    def _bxc(self, operand: int) -> None:
-        self._registers[1] ^= self._registers[2]
-        self._instruction_pointer += 2
-
-    def _out(self, operand: int) -> None:
-        self._results.append(self._get_combo_value(operand) % 8)
-        self._instruction_pointer += 2
-
-    def pretty_format_program(self, program: ProgramDataType) -> str:
-        return '\n'.join(
-            f'{self._operations[opcode].__name__}: {operand}'
-            for opcode, operand in itertools.batched(program, 2)
-        )
-
-
 def solve_pt1(data: LoadedDataType) -> str:
     initial_register_state, program_data = data
-    computer = ChronoSpatialComputer(initial_register_state)
+    computer = ChronospatialComputer(initial_register_state)
     output = computer.run_program(program_data)
     return ','.join(map(str, output))
 
 
+def bitmask(size: int) -> int:
+    return (1 << size) - 1
+
+
+_LOWER_REGISTER_BIT_MASK = bitmask(3)
+_UPPER_REGISTER_BIT_MASK = bitmask(8 + 3) ^ _LOWER_REGISTER_BIT_MASK
+
+
+def _run_one_cycle_forward(a: int) -> int:
+    """
+    Not super satisfied with this, but this is a hardcoded version of my input program, except it only
+    runs one cycle and ignores the jnz at the end. Realistically, I am not sure I can think of a
+    reasonable way to solve this problem generally. I think the following constraints _must_ be met for
+    my approach to work:
+    - There's exactly one jnz at the end of the program to an even index (in my case hardcoded to 0)
+    - Each cycle does adv by some constant amount (in my case, I hardcoded 3)
+    - There's exactly one output per cycle of the program, and that output only depends on the value of the A
+      register at the beginning of that cycle. In my case, the out instruction outputs B, but B is set to a value
+      that only depends on the lowest 10 (7 + 3) bits of A.
+
+    My program:
+    _bst: 4  # set B to A & 111
+    _bxl: 1  # flip B's lowest bit
+    _cdv: 5  # C = A >> B. B can be at most 7
+    _bxl: 5  # B = B XOR 101. B now has A's lowest 3 bits w/ the highest bit flipped
+    _bxc: 1  # B = B XOR C
+    _out: B  # output register B & 111
+    _adv: 3  # a >> 3
+    _jnz: 0  # jump to program beginning if a > 0
+    """
+
+    b = a & _LOWER_REGISTER_BIT_MASK
+    b = b ^ 1
+    c = (a >> b) & _LOWER_REGISTER_BIT_MASK
+    b = b ^ 5
+    b = b ^ c
+    return b
+
+
+def _compute_lookup_table() -> Sequence[set[int]]:
+    results = [set() for _ in range(8)]
+    for register_a_val in range(1 << (8 + 3)):
+        output = _run_one_cycle_forward(register_a_val)
+        results[output].add(register_a_val)
+    return results
+
+
+def _combine_valid_a_state_sets(cur_valid_states: set[int], prev_valid_states: set[int]) -> set[int]:
+    return {
+        (prev_a << 3) | cur_a
+        for prev_a, cur_a in itertools.product(prev_valid_states, cur_valid_states)
+        if (
+            (cur_a & _UPPER_REGISTER_BIT_MASK) ==
+            (prev_a << 3) & _UPPER_REGISTER_BIT_MASK
+        )
+    }
+
+
 def solve_pt2(data: LoadedDataType) -> int:
-    return 0
+    _, program_data = data
+    output_val_to_potential_a_vals = _compute_lookup_table()
+    valid_a_states = {0}
+    for i, expected_print in enumerate(reversed(program_data)):
+        potential_a_vals = output_val_to_potential_a_vals[expected_print]
+        valid_a_states = _combine_valid_a_state_sets(potential_a_vals, valid_a_states)
+
+    return min(valid_a_states)
 
 
 if __name__ == "__main__":
     FileSolver[LoadedDataType].construct_for_day(
         day_number=17,
         loader=load,
-        solutions=[solve_pt1, solve_pt2]
+        solutions=[solve_pt1]
     ).solve_all()
+
+    # Can't run pt 2 against sample input since my solution is hardcoded to my input
+    FileSolver[LoadedDataType].construct_for_day(
+        day_number=17,
+        loader=load,
+        solutions=[solve_pt2]
+    ).solve_file('input_17.txt')
