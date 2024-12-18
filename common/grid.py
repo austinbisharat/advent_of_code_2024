@@ -1,6 +1,6 @@
 import enum
 import itertools
-from typing import Generic, TypeVar, Sequence, TextIO, cast, Optional, Iterable
+from typing import Generic, TypeVar, Sequence, TextIO, cast, Optional, Iterable, Callable
 
 T = TypeVar('T')
 
@@ -110,6 +110,38 @@ class Grid(Generic[T]):
             (neighbor_point, self[neighbor_point])
             for neighbor_point in self.iter_neighboring_points(point, directions)
         )
+
+    def dimensions(self) -> tuple[int, int]:
+        return self.height, self.width
+
+    def format_str(self, format_val: Callable[[T], str] = str) -> str:
+        return '\n'.join(
+            ''.join(format_val(self[row_idx, col_idx]) for col_idx in range(self.width))
+            for row_idx in range(self.height)
+        )
+
+
+class SparseGrid(Grid[T]):
+    def __init__(
+        self,
+        dimensions: tuple[int, int],
+        values: dict[PositionType, T],
+        default_value: T,
+    ) -> None:
+        super().__init__([])
+        self._sparse_grid = dict(values)
+        self.height, self.width = dimensions
+        self._default_value = default_value
+
+    def __getitem__(self, point: PositionType) -> T:
+        if not self.is_valid_point(point):
+            raise InvalidPoint(f'Invalid point {point}. Width: {self.width}, Height: {self.height}')
+        return self._sparse_grid.get(point, self._default_value)
+
+    def __setitem__(self, point: PositionType, value: Optional[T]) -> None:
+        if not self.is_valid_point(point):
+            raise InvalidPoint(f'Invalid point {point}')
+        self._sparse_grid[point] = value
 
 
 def load_char_grid(file: TextIO) -> Grid[str]:
