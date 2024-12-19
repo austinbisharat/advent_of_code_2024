@@ -24,6 +24,7 @@ class Direction(enum.Enum):
     NORTH_WEST = (-1, -1)
 
 
+ALL_DIRECTIONS = list(Direction)
 CARDINAL_DIRS = [d for d in Direction if sum(map(abs, d.value)) == 1]
 POSITIVE_DIRS = [d for d in Direction if all(val >= 0 for val in d.value)]
 
