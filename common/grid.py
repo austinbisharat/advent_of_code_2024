@@ -1,11 +1,18 @@
+import collections
 import enum
 import itertools
-from typing import Generic, TypeVar, Sequence, TextIO, cast, Optional, Iterable, Callable
+from typing import Generic, TypeVar, Sequence, TextIO, cast, Optional, Iterable, Callable, Self, Hashable, Protocol
+
+from common.graph_search import GraphSearcher
 
 T = TypeVar('T')
 
 
-class InvalidPoint(Exception):
+class InvalidPointException(Exception):
+    pass
+
+
+class InvalidMazeException(Exception):
     pass
 
 
@@ -56,13 +63,13 @@ class Grid(Generic[T]):
 
     def __getitem__(self, point: PositionType) -> T:
         if not self.is_valid_point(point):
-            raise InvalidPoint(f'Invalid point {point}. Width: {self.width}, Height: {self.height}')
+            raise InvalidPointException(f'Invalid point {point}. Width: {self.width}, Height: {self.height}')
         row, col = point
         return self._grid[row][col]
 
     def __setitem__(self, point: PositionType, value: T) -> None:
         if not self.is_valid_point(point):
-            raise InvalidPoint(f'Invalid point {point}')
+            raise InvalidPointException(f'Invalid point {point}')
 
         row, col = point
         self._grid[row][col] = value
@@ -136,13 +143,84 @@ class SparseGrid(Grid[T]):
 
     def __getitem__(self, point: PositionType) -> T:
         if not self.is_valid_point(point):
-            raise InvalidPoint(f'Invalid point {point}. Width: {self.width}, Height: {self.height}')
+            raise InvalidPointException(f'Invalid point {point}. Width: {self.width}, Height: {self.height}')
         return self._sparse_grid.get(point, self._default_value)
 
     def __setitem__(self, point: PositionType, value: Optional[T]) -> None:
         if not self.is_valid_point(point):
-            raise InvalidPoint(f'Invalid point {point}')
+            raise InvalidPointException(f'Invalid point {point}')
         self._sparse_grid[point] = value
+
+
+class MazeCellProtocol(Protocol):
+    def is_terminal(self) -> bool:
+        ...
+
+    def is_travelable_point(self) -> bool:
+        ...
+
+
+CellType = TypeVar('CellType', bound=[MazeCellProtocol, Hashable])
+
+
+class MazeCell(enum.Enum):
+    EMPTY = '.'
+    WALL = '#'
+    START = 'S'
+    END = 'E'
+
+    def is_terminal(self) -> bool:
+        return self == self.END
+
+    def is_travelable_point(self) -> bool:
+        return self != self.WALL
+
+
+class MazeGrid(Grid[CellType], GraphSearcher[PositionType]):
+    def __init__(
+        self,
+        grid_data: Sequence[Sequence[T]],
+    ) -> None:
+        super().__init__(grid_data)
+        super(Grid, self).__init__()
+        self._grid_cell_type_to_positions = collections.defaultdict(set)
+        for location, cell in self.iter_points_and_values():
+            self._grid_cell_type_to_positions[cell].add(location)
+
+    def get_locations_by_cell_value(self, cell_type: CellType) -> set[PositionType]:
+        return self._grid_cell_type_to_positions[cell_type]
+
+    def get_location_by_cell_type(self, cell_type: CellType) -> PositionType:
+        locations = self._grid_cell_type_to_positions[cell_type]
+        if len(locations) != 1:
+            raise InvalidMazeException(f'Invalid cell type {cell_type}')
+        return next(iter(locations))
+
+    @classmethod
+    def parse_grid_from_file(
+        cls,
+        file: TextIO,
+        cell_parser: Callable[[str], CellType],
+    ) -> Self:
+        grid_data = [
+            [cell_parser(cell) for cell in row.strip()]
+            for row in file.readlines()
+            if row.strip()
+        ]
+        return cls(grid_data)
+
+    def get_neighbors(self, node: PositionType) -> Iterable[PositionType]:
+        return (
+            neighbor
+            for neighbor, cell in self.iter_neighboring_points_and_values(node)
+            if cell.is_travelable_point()
+        )
+
+    def edge_weight(self, orig: PositionType, neighbor: PositionType) -> float:
+        return 1
+
+    def is_terminal_node(self, node: PositionType) -> bool:
+        return self[node].is_terminal()
 
 
 def load_char_grid(file: TextIO) -> Grid[str]:
@@ -174,3 +252,7 @@ def rotate_90(d: Direction, turns: int = 1) -> 'Direction':
     if idx == -1:
         raise IndexError(f'Invalid direction {d}')
     return CARDINAL_DIRS[(idx + turns) % len(CARDINAL_DIRS)]
+
+
+def manhattan_distance(a: PositionType, b: PositionType) -> int:
+    return sum(abs(a_i - b_i) for a_i, b_i in zip(a, b))

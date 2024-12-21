@@ -4,7 +4,7 @@ from typing import TextIO, Tuple, cast, Iterable, Sequence
 
 from common.file_solver import FileSolver
 from common.graph_search import GraphSearcher, NodeType
-from common.grid import Grid, PositionType, SparseGrid, ALL_DIRECTIONS
+from common.grid import Grid, PositionType, SparseGrid, ALL_DIRECTIONS, manhattan_distance
 
 LoadedDataType = tuple[PositionType, Sequence[PositionType], int]
 
@@ -47,7 +47,7 @@ class MemorySearcher(GraphSearcher[PositionType]):
 
     def heuristic(self, node: NodeType) -> float:
         # Manhattan distance
-        return sum(abs(goal - dim) for goal, dim in zip(self._goal(), node))
+        return manhattan_distance(node, self._goal())
 
 
 def solve_pt1(data: LoadedDataType) -> int:

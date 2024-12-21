@@ -3,7 +3,7 @@ from collections import Counter
 from typing import Generator
 
 from common.file_solver import FileSolver
-from common.grid import Grid, load_char_grid, add_relative_point, scale_relative_point, InvalidPoint
+from common.grid import Grid, load_char_grid, add_relative_point, scale_relative_point, InvalidPointException
 
 LoadedDataType = Grid[str]
 
@@ -24,7 +24,7 @@ def get_all_words(grid: Grid[str], start_point: tuple[int, int]) -> Generator[st
     for dir in _DIRECTIONS:
         try:
             yield get_word(grid, start_point, dir, len(_WORD))
-        except InvalidPoint:
+        except InvalidPointException:
             pass
 
 

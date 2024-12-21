@@ -37,6 +37,7 @@ class FileSolver(Generic[T]):
             self.solve_file(file_name)
 
     def solve_file(self, file_name: str) -> None:
+        self._log_func('=' * 80)
         self._log_func(f'Solving {file_name}:')
         with open(file_name, 'r') as f:
             data = self._loader(f)
@@ -44,4 +45,4 @@ class FileSolver(Generic[T]):
         for i, solution in enumerate(self._solutions):
             result = solution(data)
             self._log_func(f'\tSolution for part {i + 1}: {result}')
-        self._log_func(f'Done.\n')
+        self._log_func('')

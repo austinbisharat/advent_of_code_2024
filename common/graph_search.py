@@ -3,7 +3,8 @@ import collections
 import dataclasses
 import heapq
 import itertools
-from typing import TypeVar, Generic, Iterable, Optional, Hashable, Sequence
+import typing
+from typing import TypeVar, Generic, Iterable, Optional, Hashable, Sequence, cast, Callable
 
 NodeType = TypeVar('NodeType', bound=Hashable)
 
@@ -21,6 +22,12 @@ class _QueueNode(Generic[NodeType]):
     prev_node: Optional[NodeType] = dataclasses.field(compare=False)
 
 
+class _SearchResult(typing.NamedTuple, Generic[NodeType]):
+    found_paths: Sequence[Iterable[NodeType]]
+    best_cost: float
+    cost_to_travel_to_node: dict[NodeType, float]
+
+
 class GraphSearcher(abc.ABC, Generic[NodeType]):
     def __init__(self):
         self._insertion_counter = itertools.count()
@@ -29,7 +36,11 @@ class GraphSearcher(abc.ABC, Generic[NodeType]):
         self,
         start_node: NodeType,
     ) -> tuple[Iterable[NodeType], float]:
-        paths, score = self._get_best_paths(start_node, return_early=True)
+        paths, score = self._get_best_paths(
+            start_node,
+            return_at_first_found_terminal_path=True,
+            path_score_pruning_condition=lambda t_score, known_score: t_score > known_score,
+        )
         if len(paths) == 0:
             raise NoSuchPathException()
         return paths[0], score
@@ -38,45 +49,63 @@ class GraphSearcher(abc.ABC, Generic[NodeType]):
         self,
         start_node: NodeType,
     ) -> tuple[Sequence[Iterable[NodeType]], float]:
-        return self._get_best_paths(start_node, return_early=False)
+        paths, cost, _ = self._get_best_paths(
+            start_node,
+            return_at_first_found_terminal_path=False,
+            path_score_pruning_condition=lambda t_score, known_score: t_score > known_score,
+        )
+        return paths, cost
+
+    def get_all_travel_costs_starting_at_node(
+        self,
+        start_node: NodeType,
+    ) -> dict[NodeType, float]:
+        _, _, costs = self._get_best_paths(
+            start_node,
+            return_at_first_found_terminal_path=False,
+            path_score_pruning_condition=lambda t_score, known_score: t_score >= known_score,
+            is_terminal_node=lambda t_node: False,
+        )
+        return costs
 
     def _get_best_paths(
         self,
         start_node: NodeType,
-        return_early: bool,
-    ) -> tuple[Sequence[Iterable[NodeType]], float]:
+        return_at_first_found_terminal_path: bool,
+        path_score_pruning_condition: Callable[[float, float], bool],
+        is_terminal_node: Optional[Callable[[NodeType], bool]] = None,
+    ) -> _SearchResult[NodeType]:
         search_queue = [self._format_q_node(start_node)]
         known_scores_by_node = collections.defaultdict(lambda: float('inf'))
         known_scores_by_node[start_node] = 0
         best_path_score = float('inf')
+        is_terminal_node = is_terminal_node or self.is_terminal_node
 
         all_best_paths = collections.deque()
-        gte = lambda x, y: x >= y
-        gt = lambda x, y: x > y
-        comparator = (gte if return_early else gt)
         while search_queue:
             current = heapq.heappop(search_queue)
-            if self.is_terminal_node(current.node_data):
+            if is_terminal_node(current.node_data):
                 best_path_score = min(current.cost_to_travel_to_node, best_path_score)
                 all_best_paths.append(self._format_path(current))
-                if return_early:
-                    return all_best_paths, best_path_score
+                if return_at_first_found_terminal_path:
+                    return _SearchResult(all_best_paths, best_path_score, known_scores_by_node)
 
             for neighbor in self.get_neighbors(current.node_data):
                 tentative_score = (
                     known_scores_by_node[current.node_data]
                     + self.edge_weight(current.node_data, neighbor)
                 )
-                if comparator(tentative_score, known_scores_by_node[neighbor]) or tentative_score > best_path_score:
+                if path_score_pruning_condition(tentative_score,
+                                                known_scores_by_node[neighbor]) or tentative_score > best_path_score:
                     continue
                 known_scores_by_node[neighbor] = tentative_score
                 heapq.heappush(search_queue, self._format_q_node(
                     node=neighbor,
                     cost_to_travel_to_node=tentative_score,
-                    prev_node=current,
+                    prev_node=cast(Optional[_QueueNode[[NodeType]]], current)
                 ))
 
-        return all_best_paths, best_path_score
+        return _SearchResult(all_best_paths, best_path_score, known_scores_by_node)
 
     def _format_path(self, node: _QueueNode[NodeType]) -> Iterable[NodeType]:
         path = collections.deque()
