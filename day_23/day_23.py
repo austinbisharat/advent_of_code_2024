@@ -1,5 +1,4 @@
 import collections
-import itertools
 from typing import TextIO, Deque
 
 from common.file_solver import FileSolver
@@ -56,7 +55,6 @@ def solve_pt1(lan_graph: LanNetworkGraphType) -> int:
 
 
 def solve_pt2(lan_graph: LanNetworkGraphType) -> str:
-    counter = itertools.count()
     visited = set()
 
     def get_largest_complete_subgraph_of_min_size(
@@ -67,10 +65,6 @@ def solve_pt2(lan_graph: LanNetworkGraphType) -> str:
         if tuple(key) in visited:
             return set()
         visited.add(key)
-        
-        call_count = next(counter)
-        if call_count % 1000 == 0:
-            print(call_count)
 
         if not potential_nodes:
             return clique_so_far.copy()
